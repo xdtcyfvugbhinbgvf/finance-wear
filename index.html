@@ -994,7 +994,7 @@ const EXP_CATEGORIES = ['Закупка товара','DTF-печать','Вес
 const EXP_CAT_COLORS = ['#8b5cf6','#10b981','#f59e0b','#3b82f6','#ef4444','#ec4899','#06b6d4','#84cc16'];
 
 // ─── STATE ───
-let supabase = null;
+let sb = null;
 let currentUser = null;
 let realtimeChannel = null;
 let db = {
@@ -1015,7 +1015,7 @@ let saveTimeout = null;
 // ─── SUPABASE STORAGE ───
 async function initSupabase() {
   try {
-    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     await loadDB();
     subscribeRealtime();
   } catch(e) {
@@ -1027,7 +1027,7 @@ async function initSupabase() {
 async function loadDB() {
   try {
     setSyncStatus('loading');
-    const { data, error } = await supabase
+    const { data, error } = await sb
       .from('crm_data')
       .select('payload')
       .eq('id', DB_ROW_ID)
@@ -1052,7 +1052,7 @@ async function saveDB() {
   saveTimeout = setTimeout(async () => {
     try {
       setSyncStatus('saving');
-      const { error } = await supabase
+      const { error } = await sb
         .from('crm_data')
         .upsert({ id: DB_ROW_ID, payload: db, updated_at: new Date().toISOString() });
       if (error) throw error;
@@ -1066,8 +1066,8 @@ async function saveDB() {
 }
 
 function subscribeRealtime() {
-  if (realtimeChannel) supabase.removeChannel(realtimeChannel);
-  realtimeChannel = supabase
+  if (realtimeChannel) sb.removeChannel(realtimeChannel);
+  realtimeChannel = sb
     .channel('crm_changes')
     .on('postgres_changes', {
       event: '*',
