@@ -1,0 +1,2005 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Brand CRM — Finance & Sales</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root {
+  --bg-primary: #0a0a0b;
+  --bg-secondary: #111114;
+  --bg-card: #16161a;
+  --bg-card-hover: #1c1c22;
+  --bg-input: #1a1a1f;
+  --bg-modal: #13131a;
+  --border: rgba(255,255,255,0.07);
+  --border-focus: rgba(139,92,246,0.5);
+  --text-primary: #f0f0f5;
+  --text-secondary: #8b8b9e;
+  --text-muted: #5a5a6e;
+  --accent: #8b5cf6;
+  --accent-light: rgba(139,92,246,0.12);
+  --accent-glow: rgba(139,92,246,0.25);
+  --green: #10b981;
+  --green-bg: rgba(16,185,129,0.1);
+  --red: #ef4444;
+  --red-bg: rgba(239,68,68,0.1);
+  --amber: #f59e0b;
+  --amber-bg: rgba(245,158,11,0.1);
+  --blue: #3b82f6;
+  --blue-bg: rgba(59,130,246,0.1);
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
+  --shadow: 0 1px 3px rgba(0,0,0,0.4);
+  --shadow-md: 0 4px 20px rgba(0,0,0,0.5);
+  --font: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', system-ui, sans-serif;
+}
+[data-theme="light"] {
+  --bg-primary: #f8f8fc;
+  --bg-secondary: #ffffff;
+  --bg-card: #ffffff;
+  --bg-card-hover: #f5f5fa;
+  --bg-input: #f5f5fa;
+  --bg-modal: #ffffff;
+  --border: rgba(0,0,0,0.08);
+  --border-focus: rgba(139,92,246,0.4);
+  --text-primary: #111118;
+  --text-secondary: #5a5a72;
+  --text-muted: #9898b0;
+  --accent-light: rgba(139,92,246,0.08);
+  --accent-glow: rgba(139,92,246,0.15);
+  --green-bg: rgba(16,185,129,0.08);
+  --red-bg: rgba(239,68,68,0.08);
+  --amber-bg: rgba(245,158,11,0.08);
+  --blue-bg: rgba(59,130,246,0.08);
+  --shadow: 0 1px 3px rgba(0,0,0,0.08);
+  --shadow-md: 0 4px 20px rgba(0,0,0,0.12);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg-primary);color:var(--text-primary);font-family:var(--font);font-size:14px;line-height:1.5;overflow:hidden}
+/* ─── Auth Screen ─── */
+#auth-screen{position:fixed;inset:0;background:var(--bg-primary);display:flex;align-items:center;justify-content:center;z-index:1000}
+.auth-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-xl);padding:40px;width:100%;max-width:380px;box-shadow:var(--shadow-md)}
+.auth-logo{display:flex;align-items:center;gap:10px;margin-bottom:28px}
+.auth-logo-icon{width:36px;height:36px;background:var(--accent);border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700;color:#fff;letter-spacing:-0.5px}
+.auth-logo-text{font-size:18px;font-weight:600;letter-spacing:-0.3px}
+.auth-logo-sub{font-size:11px;color:var(--text-muted);margin-top:1px}
+.auth-title{font-size:22px;font-weight:700;letter-spacing:-0.5px;margin-bottom:4px}
+.auth-sub{font-size:13px;color:var(--text-secondary);margin-bottom:24px}
+.form-group{margin-bottom:14px}
+.form-label{font-size:12px;color:var(--text-secondary);margin-bottom:6px;display:block;font-weight:500}
+.form-input{width:100%;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius-md);padding:10px 14px;font-size:14px;color:var(--text-primary);outline:none;transition:border-color .15s,box-shadow .15s;font-family:var(--font)}
+.form-input:focus{border-color:var(--border-focus);box-shadow:0 0 0 3px var(--accent-glow)}
+.form-input::placeholder{color:var(--text-muted)}
+.btn-primary{width:100%;background:var(--accent);border:none;border-radius:var(--radius-md);padding:11px;font-size:14px;font-weight:600;color:#fff;cursor:pointer;transition:opacity .15s,transform .1s;margin-top:4px}
+.btn-primary:hover{opacity:.9}
+.btn-primary:active{transform:scale(.99)}
+.auth-error{background:var(--red-bg);border:1px solid rgba(239,68,68,.2);border-radius:var(--radius-sm);padding:10px 12px;font-size:13px;color:var(--red);margin-bottom:14px;display:none}
+.user-list{display:grid;gap:8px;margin-top:16px}
+.user-chip{background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius-md);padding:10px 14px;cursor:pointer;transition:border-color .15s,background .15s;display:flex;align-items:center;gap:10px}
+.user-chip:hover{border-color:var(--border-focus);background:var(--accent-light)}
+.user-avatar{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0}
+.user-name{font-weight:500;font-size:13px}
+.user-role{font-size:11px;color:var(--text-muted);margin-top:1px}
+/* ─── Layout ─── */
+#app{display:none;height:100vh;flex-direction:column}
+.topbar{height:52px;background:var(--bg-card);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 16px;gap:12px;flex-shrink:0;position:sticky;top:0;z-index:100}
+.topbar-brand{display:flex;align-items:center;gap:8px;font-weight:700;font-size:15px;letter-spacing:-0.3px;text-decoration:none;color:var(--text-primary);margin-right:4px}
+.topbar-icon{width:28px;height:28px;background:var(--accent);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff}
+.topbar-nav{display:flex;align-items:center;gap:2px;flex:1;overflow-x:auto;scrollbar-width:none}
+.topbar-nav::-webkit-scrollbar{display:none}
+.nav-btn{display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:var(--radius-sm);border:none;background:transparent;color:var(--text-secondary);font-size:13px;font-weight:500;cursor:pointer;white-space:nowrap;transition:all .15s;font-family:var(--font)}
+.nav-btn:hover{background:var(--bg-input);color:var(--text-primary)}
+.nav-btn.active{background:var(--accent-light);color:var(--accent)}
+.nav-btn svg{width:15px;height:15px;flex-shrink:0}
+.topbar-right{display:flex;align-items:center;gap:8px;margin-left:auto}
+.user-badge{display:flex;align-items:center;gap:8px;padding:5px 10px;border-radius:var(--radius-md);background:var(--bg-input);cursor:pointer;border:1px solid var(--border)}
+.user-badge-avatar{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700}
+.user-badge-name{font-size:12px;font-weight:500}
+.icon-btn{width:32px;height:32px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--bg-input);color:var(--text-secondary);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.icon-btn:hover{background:var(--bg-card-hover);color:var(--text-primary)}
+.icon-btn svg{width:16px;height:16px}
+.main-layout{display:flex;flex:1;overflow:hidden}
+.sidebar{width:200px;background:var(--bg-secondary);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto;flex-shrink:0}
+@media(max-width:768px){.sidebar{display:none}.topbar-nav{display:flex}}
+.content{flex:1;overflow-y:auto;padding:20px;background:var(--bg-primary)}
+/* ─── Section base ─── */
+.section{display:none}
+.section.active{display:block}
+/* ─── Page header ─── */
+.page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px}
+.page-title{font-size:22px;font-weight:700;letter-spacing:-0.5px}
+.page-sub{font-size:13px;color:var(--text-secondary);margin-top:2px}
+.header-actions{display:flex;gap:8px;align-items:center}
+/* ─── Buttons ─── */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:var(--radius-md);border:1px solid var(--border);background:var(--bg-card);color:var(--text-primary);font-size:13px;font-weight:500;cursor:pointer;transition:all .15s;font-family:var(--font);white-space:nowrap}
+.btn:hover{background:var(--bg-card-hover);border-color:rgba(255,255,255,.12)}
+.btn.btn-accent{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.btn-accent:hover{background:#7c3aed;border-color:#7c3aed}
+.btn.btn-sm{padding:5px 10px;font-size:12px}
+.btn.btn-danger{background:var(--red-bg);border-color:rgba(239,68,68,.2);color:var(--red)}
+.btn.btn-danger:hover{background:rgba(239,68,68,.2)}
+.btn svg{width:14px;height:14px}
+/* ─── Cards ─── */
+.card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px 20px}
+.card-sm{padding:14px 16px}
+/* ─── Metric Cards ─── */
+.metrics-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:20px}
+.metric-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px 18px;transition:border-color .15s}
+.metric-card:hover{border-color:rgba(255,255,255,.12)}
+.metric-label{font-size:11px;color:var(--text-muted);font-weight:500;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.metric-value{font-size:22px;font-weight:700;letter-spacing:-0.5px;line-height:1;margin-bottom:4px}
+.metric-sub{font-size:11px;color:var(--text-secondary)}
+.metric-badge{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:600;padding:2px 6px;border-radius:4px}
+.metric-badge.up{background:var(--green-bg);color:var(--green)}
+.metric-badge.down{background:var(--red-bg);color:var(--red)}
+/* ─── Tables ─── */
+.table-wrap{overflow-x:auto;border-radius:var(--radius-lg);border:1px solid var(--border)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead tr{background:var(--bg-card)}
+thead th{padding:10px 14px;text-align:left;font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border);white-space:nowrap}
+tbody tr{border-bottom:1px solid var(--border);transition:background .1s}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:var(--bg-card-hover)}
+td{padding:11px 14px;color:var(--text-primary);vertical-align:middle}
+.td-label{font-weight:500}
+.td-muted{color:var(--text-secondary);font-size:12px}
+/* ─── Badges ─── */
+.badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:3px 8px;border-radius:5px;white-space:nowrap}
+.badge-green{background:var(--green-bg);color:var(--green)}
+.badge-red{background:var(--red-bg);color:var(--red)}
+.badge-amber{background:var(--amber-bg);color:var(--amber)}
+.badge-blue{background:var(--blue-bg);color:var(--blue)}
+.badge-purple{background:var(--accent-light);color:var(--accent)}
+.badge-gray{background:var(--bg-input);color:var(--text-secondary)}
+/* ─── Modal ─── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)}
+.modal{background:var(--bg-modal);border:1px solid var(--border);border-radius:var(--radius-xl);padding:24px;width:100%;max-width:480px;box-shadow:var(--shadow-md);max-height:90vh;overflow-y:auto}
+.modal-title{font-size:17px;font-weight:700;letter-spacing:-0.3px;margin-bottom:18px;display:flex;align-items:center;justify-content:space-between}
+.modal-close{background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius-sm);width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-secondary);transition:all .15s}
+.modal-close:hover{color:var(--text-primary);background:var(--bg-card-hover)}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.form-group{margin-bottom:14px}
+.form-select{width:100%;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius-md);padding:10px 14px;font-size:14px;color:var(--text-primary);outline:none;cursor:pointer;font-family:var(--font)}
+.form-select:focus{border-color:var(--border-focus);box-shadow:0 0 0 3px var(--accent-glow)}
+.form-textarea{width:100%;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius-md);padding:10px 14px;font-size:14px;color:var(--text-primary);outline:none;resize:vertical;min-height:72px;font-family:var(--font)}
+.form-textarea:focus{border-color:var(--border-focus);box-shadow:0 0 0 3px var(--accent-glow)}
+.modal-footer{display:flex;justify-content:flex-end;gap:8px;margin-top:6px;padding-top:16px;border-top:1px solid var(--border)}
+/* ─── Toast ─── */
+.toast-container{position:fixed;bottom:20px;right:20px;z-index:900;display:flex;flex-direction:column;gap:8px}
+.toast{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-md);padding:12px 16px;font-size:13px;font-weight:500;box-shadow:var(--shadow-md);display:flex;align-items:center;gap:8px;animation:toastIn .2s ease;max-width:300px}
+.toast.success{border-color:rgba(16,185,129,.3);color:var(--green)}
+.toast.error{border-color:rgba(239,68,68,.3);color:var(--red)}
+.toast.info{border-color:rgba(139,92,246,.3);color:var(--accent)}
+@keyframes toastIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+/* ─── Charts ─── */
+.charts-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px;margin-bottom:20px}
+.chart-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px}
+.chart-title{font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:14px;display:flex;align-items:center;justify-content:space-between}
+/* ─── Period tabs ─── */
+.period-tabs{display:flex;gap:4px;background:var(--bg-input);border-radius:var(--radius-md);padding:3px}
+.period-tab{padding:5px 12px;border-radius:7px;border:none;background:transparent;color:var(--text-secondary);font-size:12px;font-weight:500;cursor:pointer;transition:all .15s;font-family:var(--font)}
+.period-tab.active{background:var(--bg-card);color:var(--text-primary);box-shadow:var(--shadow)}
+/* ─── Account cards ─── */
+.accounts-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-bottom:20px}
+.account-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;cursor:pointer;transition:all .15s}
+.account-card:hover{border-color:rgba(255,255,255,.12);background:var(--bg-card-hover)}
+.account-card.selected{border-color:var(--accent);background:var(--accent-light)}
+.account-icon{width:40px;height:40px;border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;font-size:18px;margin-bottom:12px}
+.account-name{font-size:15px;font-weight:700;margin-bottom:4px}
+.account-balance{font-size:24px;font-weight:700;letter-spacing:-0.5px;color:var(--accent);margin-bottom:6px}
+.account-sub{font-size:12px;color:var(--text-muted)}
+/* ─── Inventory ─── */
+.product-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
+.product-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px;transition:all .15s}
+.product-card:hover{border-color:rgba(255,255,255,.12);background:var(--bg-card-hover)}
+.product-name{font-size:14px;font-weight:700;margin-bottom:4px}
+.product-meta{font-size:12px;color:var(--text-secondary);margin-bottom:10px}
+.product-qty{font-size:28px;font-weight:800;letter-spacing:-1px;margin-bottom:2px}
+.product-qty.low{color:var(--red)}
+.product-qty.ok{color:var(--green)}
+.product-prices{display:flex;justify-content:space-between;font-size:12px;color:var(--text-muted);padding-top:10px;border-top:1px solid var(--border)}
+/* ─── Reports ─── */
+.report-stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:16px}
+.report-stat{background:var(--bg-input);border-radius:var(--radius-md);padding:12px 14px;text-align:center}
+.report-stat-val{font-size:20px;font-weight:800;letter-spacing:-0.5px;margin-bottom:2px}
+.report-stat-label{font-size:11px;color:var(--text-muted)}
+/* ─── Empty ─── */
+.empty-state{text-align:center;padding:48px 24px;color:var(--text-muted)}
+.empty-icon{font-size:36px;margin-bottom:12px;opacity:.3}
+.empty-title{font-size:15px;font-weight:600;color:var(--text-secondary);margin-bottom:6px}
+.empty-sub{font-size:13px}
+/* ─── Sync dot ─── */
+.sync-dot{width:7px;height:7px;border-radius:50%;background:var(--green);display:inline-block;margin-right:4px;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+/* ─── Scrollbar ─── */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:10px}
+/* ─── Utils ─── */
+.flex{display:flex}.flex-col{flex-direction:column}.items-center{align-items:center}.justify-between{justify-content:space-between}.gap-2{gap:8px}.gap-3{gap:12px}.mt-1{margin-top:4px}.mt-2{margin-top:8px}.mt-3{margin-top:12px}.mt-4{margin-top:16px}.mb-1{margin-bottom:4px}.mb-2{margin-bottom:8px}.mb-3{margin-bottom:12px}.mb-4{margin-bottom:16px}.text-green{color:var(--green)}.text-red{color:var(--red)}.text-amber{color:var(--amber)}.text-muted{color:var(--text-muted)}.text-secondary{color:var(--text-secondary)}.font-bold{font-weight:700}.font-medium{font-weight:500}.hidden{display:none!important}
+.divider{height:1px;background:var(--border);margin:16px 0}
+.loading-spinner{width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.7s linear infinite;display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.section-label{font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.7px}
+.transfer-arrow{display:flex;align-items:center;justify-content:center;padding:8px 0;color:var(--text-muted)}
+@media(max-width:600px){.form-row{grid-template-columns:1fr}.metrics-grid{grid-template-columns:1fr 1fr}.page-title{font-size:18px}.topbar{padding:0 12px}.content{padding:14px}}
+</style>
+</head>
+<body>
+
+<!-- ─── AUTH ─── -->
+<div id="auth-screen">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <div class="auth-logo-icon">B</div>
+      <div>
+        <div class="auth-logo-text">Brand CRM</div>
+        <div style="font-size:11px;color:var(--text-muted)">Finance & Sales</div>
+      </div>
+    </div>
+    <div class="auth-title">Вход</div>
+    <div class="auth-sub" style="margin-bottom:20px">Введите PIN-код для доступа</div>
+    <div class="auth-error" id="auth-error">Неверный PIN-код</div>
+    <div class="form-group">
+      <label class="form-label">PIN-код</label>
+      <input type="password" class="form-input" id="pin-input" placeholder="••••" maxlength="8"
+        style="font-size:20px;letter-spacing:6px;text-align:center"
+        onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <button class="btn-primary" onclick="doLogin()">Войти</button>
+    <div class="divider"></div>
+    <div style="font-size:12px;color:var(--text-muted);text-align:center">
+      PIN по умолчанию: <strong style="color:var(--text-secondary)">1234</strong> — смените в настройках после входа
+    </div>
+  </div>
+</div>
+
+<!-- ─── APP ─── -->
+<div id="app">
+  <!-- Topbar -->
+  <div class="topbar">
+    <a class="topbar-brand" href="#" onclick="navigate('dashboard');return false">
+      <div class="topbar-icon">B</div>
+      <span style="display:none" class="brand-text-full">Brand CRM</span>
+    </a>
+    <nav class="topbar-nav" id="topbar-nav">
+      <button class="nav-btn active" onclick="navigate('dashboard')" data-section="dashboard">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        Dashboard
+      </button>
+      <button class="nav-btn" onclick="navigate('incomes')" data-section="incomes">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+        Доходы
+      </button>
+      <button class="nav-btn" onclick="navigate('expenses')" data-section="expenses">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/></svg>
+        Расходы
+      </button>
+      <button class="nav-btn" onclick="navigate('accounts')" data-section="accounts">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+        Счета
+      </button>
+      <button class="nav-btn" onclick="navigate('sales')" data-section="sales">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+        Продажи
+      </button>
+      <button class="nav-btn" onclick="navigate('inventory')" data-section="inventory">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 7H4a2 2 0 00-2 2v9a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/></svg>
+        Склад
+      </button>
+      <button class="nav-btn" onclick="navigate('reports')" data-section="reports">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        Отчёты
+      </button>
+    </nav>
+    <div class="topbar-right">
+      <span style="font-size:11px;color:var(--text-secondary);display:flex;align-items:center;gap:4px" id="sync-status">
+        <span class="sync-dot"></span>Синхронизация
+      </span>
+      <button class="icon-btn" onclick="toggleTheme()" title="Сменить тему">
+        <svg id="theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      </button>
+      <button class="icon-btn" onclick="openModal('settings')" title="Настройки">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+      </button>
+      <div class="user-badge" id="current-user-badge" onclick="logout()">
+        <div class="user-badge-avatar" id="current-user-avatar" style="background:var(--accent-light);color:var(--accent)"></div>
+        <div class="user-badge-name" id="current-user-name"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Content -->
+  <div style="flex:1;overflow:hidden;display:flex">
+    <div class="content" id="content">
+
+      <!-- ─── DASHBOARD ─── -->
+      <div class="section active" id="section-dashboard">
+        <div class="page-header">
+          <div>
+            <div class="page-title" id="dash-greeting">Доброе утро 👋</div>
+            <div class="page-sub" id="dash-date"></div>
+          </div>
+          <div class="header-actions">
+            <div class="period-tabs" id="dash-period-tabs">
+              <button class="period-tab active" onclick="setDashPeriod('day')">День</button>
+              <button class="period-tab" onclick="setDashPeriod('week')">Неделя</button>
+              <button class="period-tab" onclick="setDashPeriod('month')">Месяц</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Main metrics -->
+        <div class="metrics-grid" id="dash-metrics"></div>
+
+        <!-- Charts -->
+        <div class="charts-grid">
+          <div class="chart-card">
+            <div class="chart-title">
+              <span>Доходы и расходы</span>
+              <span style="font-size:11px;color:var(--text-muted)" id="chart1-period">последние 7 дней</span>
+            </div>
+            <div style="position:relative;height:200px">
+              <canvas id="revenueChart" role="img" aria-label="Доходы и расходы за период"></canvas>
+            </div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-title">
+              <span>Прибыль</span>
+              <span style="font-size:11px;color:var(--text-muted)">динамика</span>
+            </div>
+            <div style="position:relative;height:200px">
+              <canvas id="profitChart" role="img" aria-label="Прибыль за период"></canvas>
+            </div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-title">
+              <span>Продажи</span>
+              <span style="font-size:11px;color:var(--text-muted)">количество</span>
+            </div>
+            <div style="position:relative;height:200px">
+              <canvas id="salesChart" role="img" aria-label="Количество продаж"></canvas>
+            </div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-title">
+              <span>Расходы по категориям</span>
+              <span style="font-size:11px;color:var(--text-muted)">всё время</span>
+            </div>
+            <div style="position:relative;height:200px">
+              <canvas id="expCatChart" role="img" aria-label="Расходы по категориям"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent activity -->
+        <div class="section-header">
+          <div class="section-label">Последние операции</div>
+          <button class="btn btn-sm" onclick="navigate('sales')">Все продажи →</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th>Тип</th><th>Описание</th><th>Сумма</th><th>Дата</th><th>Статус</th>
+            </tr></thead>
+            <tbody id="recent-activity-body">
+              <tr><td colspan="5" style="text-align:center;padding:24px;color:var(--text-muted)">Загрузка...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ─── INCOMES ─── -->
+      <div class="section" id="section-incomes">
+        <div class="page-header">
+          <div>
+            <div class="page-title">Доходы</div>
+            <div class="page-sub">Управление источниками дохода</div>
+          </div>
+          <div class="header-actions">
+            <button class="btn btn-accent" onclick="openModal('income')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Добавить доход
+            </button>
+          </div>
+        </div>
+        <div class="metrics-grid">
+          <div class="metric-card">
+            <div class="metric-label">Сегодня</div>
+            <div class="metric-value text-green" id="inc-day">—</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">Неделя</div>
+            <div class="metric-value" id="inc-week">—</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">Месяц</div>
+            <div class="metric-value" id="inc-month">—</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">Всего записей</div>
+            <div class="metric-value" id="inc-count">—</div>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th>Источник</th><th>Комментарий</th><th>Дата</th><th>Сумма</th><th>Действия</th>
+            </tr></thead>
+            <tbody id="incomes-body"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ─── EXPENSES ─── -->
+      <div class="section" id="section-expenses">
+        <div class="page-header">
+          <div>
+            <div class="page-title">Расходы</div>
+            <div class="page-sub">Учёт затрат по категориям</div>
+          </div>
+          <div class="header-actions">
+            <button class="btn btn-accent" onclick="openModal('expense')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Добавить расход
+            </button>
+          </div>
+        </div>
+        <div class="metrics-grid">
+          <div class="metric-card">
+            <div class="metric-label">Сегодня</div>
+            <div class="metric-value text-red" id="exp-day">—</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">Неделя</div>
+            <div class="metric-value" id="exp-week">—</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">Месяц</div>
+            <div class="metric-value" id="exp-month">—</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">Всего записей</div>
+            <div class="metric-value" id="exp-count">—</div>
+          </div>
+        </div>
+        <!-- Category breakdown -->
+        <div class="section-header" style="margin-top:4px">
+          <div class="section-label">По категориям</div>
+        </div>
+        <div class="metrics-grid" id="exp-cat-breakdown" style="margin-bottom:16px"></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th>Категория</th><th>Комментарий</th><th>Дата</th><th>Сумма</th><th>Действия</th>
+            </tr></thead>
+            <tbody id="expenses-body"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ─── ACCOUNTS ─── -->
+      <div class="section" id="section-accounts">
+        <div class="page-header">
+          <div>
+            <div class="page-title">Счета</div>
+            <div class="page-sub">Управление балансами</div>
+          </div>
+          <div class="header-actions">
+            <button class="btn" onclick="openModal('transfer')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 16V4m0 0L3 8m4-4l4 4"/><path d="M17 8v12m0 0l4-4m-4 4l-4-4"/></svg>
+              Перевод
+            </button>
+          </div>
+        </div>
+        <div class="accounts-grid" id="accounts-grid"></div>
+        <div class="section-header">
+          <div class="section-label">История операций</div>
+          <div class="period-tabs" id="acc-filter">
+            <button class="period-tab active" onclick="filterAccOps('all')">Все</button>
+            <button class="period-tab" onclick="filterAccOps('kaspi')">Kaspi</button>
+            <button class="period-tab" onclick="filterAccOps('cash')">Наличные</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th>Тип</th><th>Счёт</th><th>Описание</th><th>Дата</th><th>Сумма</th>
+            </tr></thead>
+            <tbody id="acc-ops-body"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ─── SALES ─── -->
+      <div class="section" id="section-sales">
+        <div class="page-header">
+          <div>
+            <div class="page-title">Продажи</div>
+            <div class="page-sub">Учёт продаж и выручки</div>
+          </div>
+          <div class="header-actions">
+            <button class="btn btn-accent" onclick="openModal('sale')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Новая продажа
+            </button>
+          </div>
+        </div>
+        <div class="metrics-grid">
+          <div class="metric-card">
+            <div class="metric-label">Выручка (месяц)</div>
+            <div class="metric-value text-green" id="sales-revenue">—</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">Прибыль (месяц)</div>
+            <div class="metric-value" id="sales-profit">—</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">Средняя маржа</div>
+            <div class="metric-value" id="sales-margin">—</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">Продаж (месяц)</div>
+            <div class="metric-value" id="sales-count">—</div>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th>Товар</th><th>Кол-во</th><th>Цена</th><th>Себест.</th><th>Выручка</th><th>Прибыль</th><th>Маржа</th><th>Дата</th><th>Действия</th>
+            </tr></thead>
+            <tbody id="sales-body"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ─── INVENTORY ─── -->
+      <div class="section" id="section-inventory">
+        <div class="page-header">
+          <div>
+            <div class="page-title">Склад</div>
+            <div class="page-sub">Остатки и товары</div>
+          </div>
+          <div class="header-actions">
+            <button class="btn" onclick="openModal('stockin')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+              Поступление
+            </button>
+            <button class="btn btn-accent" onclick="openModal('product')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Добавить товар
+            </button>
+          </div>
+        </div>
+        <div class="metrics-grid">
+          <div class="metric-card">
+            <div class="metric-label">Всего позиций</div>
+            <div class="metric-value" id="inv-total">—</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">Стоимость склада</div>
+            <div class="metric-value" id="inv-value">—</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">Мало остатка</div>
+            <div class="metric-value text-amber" id="inv-low">—</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">Нет в наличии</div>
+            <div class="metric-value text-red" id="inv-zero">—</div>
+          </div>
+        </div>
+        <div class="product-grid" id="product-grid"></div>
+      </div>
+
+      <!-- ─── REPORTS ─── -->
+      <div class="section" id="section-reports">
+        <div class="page-header">
+          <div>
+            <div class="page-title">Отчёты</div>
+            <div class="page-sub">Аналитика и статистика</div>
+          </div>
+          <div class="header-actions">
+            <div class="period-tabs" id="report-period-tabs">
+              <button class="period-tab active" onclick="setReportPeriod('day')">День</button>
+              <button class="period-tab" onclick="setReportPeriod('week')">Неделя</button>
+              <button class="period-tab" onclick="setReportPeriod('month')">Месяц</button>
+            </div>
+            <button class="btn" onclick="exportReport()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Экспорт CSV
+            </button>
+            <button class="btn btn-danger" onclick="confirmReset()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3"/></svg>
+              Сбросить данные
+            </button>
+          </div>
+        </div>
+        <div class="report-stat-grid" id="report-stats"></div>
+        <div class="charts-grid">
+          <div class="chart-card" style="grid-column:1/-1">
+            <div class="chart-title">Доходы, расходы и прибыль</div>
+            <div style="position:relative;height:260px">
+              <canvas id="reportMainChart" role="img" aria-label="Отчёт по доходам расходам и прибыли"></canvas>
+            </div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-title">Продажи по дням</div>
+            <div style="position:relative;height:220px">
+              <canvas id="reportSalesChart" role="img" aria-label="Продажи по дням"></canvas>
+            </div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-title">Расходы по категориям</div>
+            <div style="position:relative;height:220px">
+              <canvas id="reportExpChart" role="img" aria-label="Расходы по категориям"></canvas>
+            </div>
+          </div>
+        </div>
+        <div class="section-header">
+          <div class="section-label">Топ продаж</div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th>Товар</th><th>Продаж</th><th>Выручка</th><th>Прибыль</th><th>Маржа</th>
+            </tr></thead>
+            <tbody id="report-top-body"></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ─── MODALS ─── -->
+<div id="modal-overlay" class="modal-overlay hidden" onclick="closeModal(event)">
+
+  <!-- Income Modal -->
+  <div class="modal hidden" id="modal-income">
+    <div class="modal-title">
+      <span>Новый доход</span>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Сумма (₸)</label>
+        <input type="number" class="form-input" id="inc-amount" placeholder="0" min="0">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Дата</label>
+        <input type="date" class="form-input" id="inc-date">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Источник дохода</label>
+      <select class="form-select" id="inc-source">
+        <option value="Продажи">Продажи</option>
+        <option value="Оптовые продажи">Оптовые продажи</option>
+        <option value="Возврат инвестиций">Возврат инвестиций</option>
+        <option value="Маркетплейс">Маркетплейс</option>
+        <option value="Прочее">Прочее</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Счёт получения</label>
+      <select class="form-select" id="inc-account">
+        <option value="kaspi">Kaspi</option>
+        <option value="cash">Наличные</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Комментарий</label>
+      <textarea class="form-textarea" id="inc-comment" placeholder="Необязательно..."></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal()">Отмена</button>
+      <button class="btn btn-accent" onclick="saveIncome()">Сохранить</button>
+    </div>
+  </div>
+
+  <!-- Expense Modal -->
+  <div class="modal hidden" id="modal-expense">
+    <div class="modal-title">
+      <span>Новый расход</span>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Сумма (₸)</label>
+        <input type="number" class="form-input" id="exp-amount" placeholder="0" min="0">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Дата</label>
+        <input type="date" class="form-input" id="exp-date">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Категория</label>
+      <select class="form-select" id="exp-category">
+        <option value="Закупка товара">Закупка товара</option>
+        <option value="DTF-печать">DTF-печать</option>
+        <option value="Вес товара / доставка">Вес товара / доставка</option>
+        <option value="Бирки">Бирки</option>
+        <option value="Этикетки">Этикетки</option>
+        <option value="Упаковка">Упаковка</option>
+        <option value="Маркетинг">Маркетинг</option>
+        <option value="Прочие расходы">Прочие расходы</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Счёт списания</label>
+      <select class="form-select" id="exp-account">
+        <option value="kaspi">Kaspi</option>
+        <option value="cash">Наличные</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Комментарий</label>
+      <textarea class="form-textarea" id="exp-comment" placeholder="Необязательно..."></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal()">Отмена</button>
+      <button class="btn btn-accent" onclick="saveExpense()">Сохранить</button>
+    </div>
+  </div>
+
+  <!-- Transfer Modal -->
+  <div class="modal hidden" id="modal-transfer">
+    <div class="modal-title">
+      <span>Перевод между счетами</span>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Со счёта</label>
+      <select class="form-select" id="tr-from">
+        <option value="kaspi">Kaspi</option>
+        <option value="cash">Наличные</option>
+      </select>
+    </div>
+    <div class="transfer-arrow">
+      <svg viewBox="0 0 24 24" width="20" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>
+    </div>
+    <div class="form-group">
+      <label class="form-label">На счёт</label>
+      <select class="form-select" id="tr-to">
+        <option value="cash">Наличные</option>
+        <option value="kaspi">Kaspi</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Сумма (₸)</label>
+        <input type="number" class="form-input" id="tr-amount" placeholder="0">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Дата</label>
+        <input type="date" class="form-input" id="tr-date">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Комментарий</label>
+      <textarea class="form-textarea" id="tr-comment" placeholder="Необязательно..."></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal()">Отмена</button>
+      <button class="btn btn-accent" onclick="saveTransfer()">Перевести</button>
+    </div>
+  </div>
+
+  <!-- Sale Modal -->
+  <div class="modal hidden" id="modal-sale">
+    <div class="modal-title">
+      <span>Новая продажа</span>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Товар со склада</label>
+      <select class="form-select" id="sale-product-select" onchange="fillSaleFromProduct()">
+        <option value="">— Выбрать с склада —</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Название товара</label>
+      <input type="text" class="form-input" id="sale-name" placeholder="Худи оверсайз черный XL">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Количество</label>
+        <input type="number" class="form-input" id="sale-qty" value="1" min="1">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Цена продажи (₸)</label>
+        <input type="number" class="form-input" id="sale-price" placeholder="0">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Себестоимость (₸)</label>
+        <input type="number" class="form-input" id="sale-cost" placeholder="0">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Дата продажи</label>
+        <input type="date" class="form-input" id="sale-date">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Счёт получения</label>
+      <select class="form-select" id="sale-account">
+        <option value="kaspi">Kaspi</option>
+        <option value="cash">Наличные</option>
+      </select>
+    </div>
+    <div id="sale-preview" style="background:var(--bg-input);border-radius:var(--radius-md);padding:12px 14px;font-size:13px;display:none;margin-bottom:14px">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center">
+        <div><div style="color:var(--text-muted);font-size:11px;margin-bottom:3px">Выручка</div><div style="font-weight:700;color:var(--green)" id="sp-rev">—</div></div>
+        <div><div style="color:var(--text-muted);font-size:11px;margin-bottom:3px">Прибыль</div><div style="font-weight:700" id="sp-prof">—</div></div>
+        <div><div style="color:var(--text-muted);font-size:11px;margin-bottom:3px">Маржа</div><div style="font-weight:700" id="sp-margin">—</div></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal()">Отмена</button>
+      <button class="btn btn-accent" onclick="saveSale()">Продать</button>
+    </div>
+  </div>
+
+  <!-- Product Modal -->
+  <div class="modal hidden" id="modal-product">
+    <div class="modal-title">
+      <span>Новый товар</span>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Название товара</label>
+      <input type="text" class="form-input" id="prod-name" placeholder="Худи оверсайз">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Размер</label>
+        <select class="form-select" id="prod-size">
+          <option value="XS">XS</option>
+          <option value="S">S</option>
+          <option value="M" selected>M</option>
+          <option value="L">L</option>
+          <option value="XL">XL</option>
+          <option value="XXL">XXL</option>
+          <option value="One Size">One Size</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Цвет</label>
+        <input type="text" class="form-input" id="prod-color" placeholder="Черный">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Количество</label>
+        <input type="number" class="form-input" id="prod-qty" value="1" min="0">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Себестоимость (₸)</label>
+        <input type="number" class="form-input" id="prod-cost" placeholder="0">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Цена продажи (₸)</label>
+      <input type="number" class="form-input" id="prod-price" placeholder="0">
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal()">Отмена</button>
+      <button class="btn btn-accent" onclick="saveProduct()">Добавить</button>
+    </div>
+  </div>
+
+  <!-- Stock In Modal -->
+  <div class="modal hidden" id="modal-stockin">
+    <div class="modal-title">
+      <span>Поступление товара</span>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Товар</label>
+      <select class="form-select" id="si-product"></select>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Количество</label>
+        <input type="number" class="form-input" id="si-qty" value="1" min="1">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Дата</label>
+        <input type="date" class="form-input" id="si-date">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal()">Отмена</button>
+      <button class="btn btn-accent" onclick="saveStockIn()">Принять</button>
+    </div>
+  </div>
+
+  <!-- Settings Modal -->
+  <div class="modal hidden" id="modal-settings">
+    <div class="modal-title">
+      <span>Настройки</span>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div style="background:var(--bg-input);border-radius:var(--radius-md);padding:14px 16px;margin-bottom:16px;font-size:13px;color:var(--text-secondary)">
+      ✅ Данные хранятся в облаке (Supabase) и синхронизируются между всеми устройствами в реальном времени.
+    </div>
+    <div class="form-group">
+      <label class="form-label">Текущий PIN</label>
+      <input type="password" class="form-input" id="pin-old" placeholder="Текущий PIN">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Новый PIN</label>
+      <input type="password" class="form-input" id="pin-new" placeholder="Новый PIN (мин. 4 символа)">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Повторите новый PIN</label>
+      <input type="password" class="form-input" id="pin-new2" placeholder="Повторите новый PIN">
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal()">Отмена</button>
+      <button class="btn btn-accent" onclick="savePin()">Сменить PIN</button>
+    </div>
+  </div>
+
+  <!-- Reset Confirm Modal -->
+  <div class="modal hidden" id="modal-reset">
+    <div class="modal-title">
+      <span style="color:var(--red)">Сброс всех данных</span>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div style="background:var(--red-bg);border:1px solid rgba(239,68,68,.2);border-radius:var(--radius-md);padding:14px 16px;margin-bottom:16px;font-size:13px;color:var(--red)">
+      ⚠️ Это удалит ВСЕ данные: доходы, расходы, продажи, склад, счета. Действие необратимо.
+    </div>
+    <div class="form-group">
+      <label class="form-label">Введите PIN для подтверждения</label>
+      <input type="password" class="form-input" id="reset-pin" placeholder="PIN-код">
+    </div>
+    <div style="margin-bottom:14px">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px">
+        <input type="checkbox" id="reset-confirm-cb" style="width:16px;height:16px;accent-color:var(--red)">
+        Я понимаю, что все данные будут удалены безвозвратно
+      </label>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal()">Отмена</button>
+      <button class="btn btn-danger" onclick="doReset()" style="background:var(--red);color:#fff;border-color:var(--red)">Удалить все данные</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- Toast container -->
+<div class="toast-container" id="toast-container"></div>
+
+<script>
+'use strict';
+
+// ─── CONFIG ───
+const SUPABASE_URL = 'https://tvrazxrgoiwmiwlibtnz.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_AhLAqvAXiJgwEcumXwJ9yQ_lLq7utwT';
+const DB_ROW_ID = 'main'; // single-row store
+function getPin() { return localStorage.getItem('crm_pin') || '1234'; }
+const OWNER = {id:'owner', name:'Владелец', color:'#8b5cf6', bg:'rgba(139,92,246,0.15)', initials:'VL'};
+const EXP_CATEGORIES = ['Закупка товара','DTF-печать','Вес товара / доставка','Бирки','Этикетки','Упаковка','Маркетинг','Прочие расходы'];
+const EXP_CAT_COLORS = ['#8b5cf6','#10b981','#f59e0b','#3b82f6','#ef4444','#ec4899','#06b6d4','#84cc16'];
+
+// ─── STATE ───
+let supabase = null;
+let currentUser = null;
+let realtimeChannel = null;
+let db = {
+  incomes:[],
+  expenses:[],
+  sales:[],
+  products:[],
+  accounts:{kaspi:0, cash:0},
+  accOps:[],
+  lastUpdated: Date.now()
+};
+let dashPeriod = 'day';
+let reportPeriod = 'day';
+let accFilter = 'all';
+let charts = {};
+let saveTimeout = null;
+
+// ─── SUPABASE STORAGE ───
+async function initSupabase() {
+  try {
+    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    await loadDB();
+    subscribeRealtime();
+  } catch(e) {
+    console.warn('Supabase init error:', e);
+    setSyncStatus('error');
+  }
+}
+
+async function loadDB() {
+  try {
+    setSyncStatus('loading');
+    const { data, error } = await supabase
+      .from('crm_data')
+      .select('payload')
+      .eq('id', DB_ROW_ID)
+      .single();
+    if (error && error.code !== 'PGRST116') throw error; // PGRST116 = not found
+    if (data && data.payload) {
+      db = Object.assign(db, data.payload);
+    }
+    setSyncStatus('ok');
+  } catch(e) {
+    console.warn('Load error:', e);
+    setSyncStatus('error');
+  }
+}
+
+async function saveDB() {
+  db.lastUpdated = Date.now();
+  // Optimistic local cache
+  localStorage.setItem('crm_cache_v4', JSON.stringify(db));
+  // Debounce: wait 300ms before writing to Supabase to batch rapid changes
+  clearTimeout(saveTimeout);
+  saveTimeout = setTimeout(async () => {
+    try {
+      setSyncStatus('saving');
+      const { error } = await supabase
+        .from('crm_data')
+        .upsert({ id: DB_ROW_ID, payload: db, updated_at: new Date().toISOString() });
+      if (error) throw error;
+      setSyncStatus('ok');
+    } catch(e) {
+      console.error('Save error:', e);
+      setSyncStatus('error');
+      showToast('Ошибка сохранения — проверьте соединение', 'error');
+    }
+  }, 300);
+}
+
+function subscribeRealtime() {
+  if (realtimeChannel) supabase.removeChannel(realtimeChannel);
+  realtimeChannel = supabase
+    .channel('crm_changes')
+    .on('postgres_changes', {
+      event: '*',
+      schema: 'public',
+      table: 'crm_data',
+      filter: `id=eq.${DB_ROW_ID}`
+    }, (payload) => {
+      if (payload.new && payload.new.payload) {
+        const incoming = payload.new.payload;
+        if (incoming.lastUpdated !== db.lastUpdated) {
+          db = Object.assign(db, incoming);
+          localStorage.setItem('crm_cache_v4', JSON.stringify(db));
+          refreshCurrentSection();
+          showSyncIndicator();
+        }
+      }
+    })
+    .subscribe((status) => {
+      if (status === 'SUBSCRIBED') setSyncStatus('ok');
+    });
+}
+
+function setSyncStatus(state) {
+  const el = document.getElementById('sync-status');
+  if (!el) return;
+  const states = {
+    loading: ['⟳ Загрузка...', ''],
+    saving:  ['<span class="sync-dot" style="background:var(--amber)"></span>Сохранение...', 'var(--amber)'],
+    ok:      ['<span class="sync-dot"></span>Синхронизировано', 'var(--green)'],
+    error:   ['<span class="sync-dot" style="background:var(--red)"></span>Нет связи', 'var(--red)'],
+  };
+  const [html, color] = states[state] || states.ok;
+  el.innerHTML = html;
+  el.style.color = color;
+}
+
+function showSyncIndicator() {
+  setSyncStatus('ok');
+  setTimeout(() => setSyncStatus('ok'), 2000);
+}
+
+
+// ─── UTILS ───
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+function fmt(n) {
+  if(n===undefined||n===null) return '—';
+  return Math.round(n).toLocaleString('ru-RU') + ' ₸';
+}
+function fmtNum(n) { return Math.round(n).toLocaleString('ru-RU'); }
+function fmtPct(n) { return Math.round(n) + '%'; }
+function today() { return new Date().toISOString().split('T')[0]; }
+function fmtDate(d) {
+  if(!d) return '—';
+  const [y,m,day] = d.split('-');
+  const months = ['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
+  return `${parseInt(day)} ${months[parseInt(m)-1]} ${y}`;
+}
+function getDateRange(period, refDate) {
+  const ref = refDate ? new Date(refDate) : new Date();
+  ref.setHours(0,0,0,0);
+  let start, end = new Date(ref);
+  end.setHours(23,59,59,999);
+  if(period==='day') { start = new Date(ref); }
+  else if(period==='week') { start = new Date(ref); start.setDate(ref.getDate()-6); }
+  else if(period==='month') { start = new Date(ref); start.setDate(1); }
+  else if(period==='year') { start = new Date(ref.getFullYear(),0,1); end = new Date(ref.getFullYear(),11,31,23,59,59); }
+  return { start: start.toISOString().split('T')[0], end: end.toISOString().split('T')[0] };
+}
+function inRange(dateStr, start, end) { return dateStr >= start && dateStr <= end; }
+
+function calcSaleMetrics(s) {
+  const rev = s.qty * s.price;
+  const profit = s.qty * (s.price - s.cost);
+  const margin = s.price > 0 ? ((s.price - s.cost) / s.price * 100) : 0;
+  return { rev, profit, margin };
+}
+
+// ─── AUTH ───
+function initAuth() {
+  const saved = sessionStorage.getItem('crm_session');
+  if(saved === 'ok') enterApp();
+  else document.getElementById('pin-input').focus();
+}
+
+function doLogin() {
+  const val = document.getElementById('pin-input').value;
+  const err = document.getElementById('auth-error');
+  if(val === getPin()) {
+    err.style.display = 'none';
+    sessionStorage.setItem('crm_session', 'ok');
+    enterApp();
+  } else {
+    err.style.display = 'block';
+    document.getElementById('pin-input').value = '';
+    document.getElementById('pin-input').focus();
+  }
+}
+
+function enterApp() {
+  currentUser = OWNER;
+  document.getElementById('auth-screen').style.display = 'none';
+  const app = document.getElementById('app');
+  app.style.display = 'flex';
+  app.style.flexDirection = 'column';
+  document.getElementById('current-user-name').textContent = OWNER.name;
+  const av = document.getElementById('current-user-avatar');
+  av.textContent = OWNER.initials;
+  av.style.background = OWNER.bg;
+  av.style.color = OWNER.color;
+  updateGreeting();
+  renderDashboard();
+}
+
+function logout() {
+  if(!confirm('Выйти?')) return;
+  sessionStorage.removeItem('crm_session');
+  currentUser = null;
+  document.getElementById('auth-screen').style.display = 'flex';
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('pin-input').value = '';
+}
+
+// ─── NAV ───
+let currentSection = 'dashboard';
+function navigate(section) {
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  const s = document.getElementById('section-'+section);
+  if(s) s.classList.add('active');
+  document.querySelectorAll(`.nav-btn[data-section="${section}"]`).forEach(b=>b.classList.add('active'));
+  currentSection = section;
+  renderSection(section);
+}
+
+function refreshCurrentSection() {
+  renderSection(currentSection);
+}
+
+function renderSection(s) {
+  if(s==='dashboard') renderDashboard();
+  else if(s==='incomes') renderIncomes();
+  else if(s==='expenses') renderExpenses();
+  else if(s==='accounts') renderAccounts();
+  else if(s==='sales') renderSales();
+  else if(s==='inventory') renderInventory();
+  else if(s==='reports') renderReports();
+}
+
+// ─── GREETING ───
+function updateGreeting() {
+  const h = new Date().getHours();
+  let g = h<5?'Доброй ночи 🌙':h<12?'Доброе утро ☀️':h<17?'Добрый день 👋':h<21?'Добрый вечер 🌅':'Доброй ночи 🌙';
+  const el = document.getElementById('dash-greeting');
+  if(el) el.textContent = g + (currentUser ? ', ' + currentUser.name : '');
+  const de = document.getElementById('dash-date');
+  if(de) de.textContent = new Date().toLocaleDateString('ru-RU',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+}
+
+// ─── THEME ───
+function toggleTheme() {
+  const html = document.documentElement;
+  const isDark = html.getAttribute('data-theme') === 'dark';
+  html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+  const icon = document.getElementById('theme-icon');
+  if(isDark) {
+    icon.innerHTML = '<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>';
+  } else {
+    icon.innerHTML = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>';
+  }
+  // Redraw charts
+  setTimeout(()=>{ if(currentSection==='dashboard') renderDashboard(); else renderSection(currentSection); }, 50);
+}
+function isDark() { return document.documentElement.getAttribute('data-theme')==='dark'; }
+
+// ─── DASHBOARD ───
+function setDashPeriod(p) {
+  dashPeriod = p;
+  document.querySelectorAll('#dash-period-tabs .period-tab').forEach(b=>b.classList.remove('active'));
+  event.target.classList.add('active');
+  renderDashboard();
+}
+
+function renderDashboard() {
+  const { start, end } = getDateRange(dashPeriod);
+  const allInc = db.incomes.filter(x=>inRange(x.date,start,end));
+  const allExp = db.expenses.filter(x=>inRange(x.date,start,end));
+  const allSales = db.sales.filter(x=>inRange(x.date,start,end));
+  const totalInc = allInc.reduce((a,x)=>a+x.amount,0);
+  const totalExp = allExp.reduce((a,x)=>a+x.amount,0);
+  const totalProfit = totalInc - totalExp;
+  const totalRev = allSales.reduce((a,s)=>a+calcSaleMetrics(s).rev,0);
+  const totalSalesCount = allSales.reduce((a,s)=>a+s.qty,0);
+  const totalBalance = db.accounts.kaspi + db.accounts.cash;
+  const totalStock = db.products.reduce((a,p)=>a+p.qty,0);
+  const periodLabel = dashPeriod==='day'?'(сегодня)':dashPeriod==='week'?'(7 дней)':'(месяц)';
+
+  const metrics = [
+    {label:'Общий баланс',value:fmt(totalBalance),color:'var(--accent)',sub:'Kaspi + Наличные'},
+    {label:`Доход ${periodLabel}`,value:fmt(totalInc),color:'var(--green)',sub:`${allInc.length} операций`},
+    {label:`Расход ${periodLabel}`,value:fmt(totalExp),color:'var(--red)',sub:`${allExp.length} операций`},
+    {label:`Прибыль ${periodLabel}`,value:fmt(totalProfit),color:totalProfit>=0?'var(--green)':'var(--red)',sub:'Доход − расход'},
+    {label:`Выручка ${periodLabel}`,value:fmt(totalRev),color:'var(--blue)',sub:`${allSales.length} продаж`},
+    {label:'Продаж (шт)',value:fmtNum(totalSalesCount),color:'var(--amber)',sub:periodLabel},
+    {label:'Остаток Kaspi',value:fmt(db.accounts.kaspi),color:'var(--green)',sub:'Текущий баланс'},
+    {label:'Остаток Нал.',value:fmt(db.accounts.cash),color:'var(--amber)',sub:'Текущий баланс'},
+    {label:'Позиций склад',value:fmtNum(totalStock),color:'var(--text-primary)',sub:'Единиц товара'},
+  ];
+
+  document.getElementById('dash-metrics').innerHTML = metrics.map(m=>`
+    <div class="metric-card">
+      <div class="metric-label">${m.label}</div>
+      <div class="metric-value" style="color:${m.color}">${m.value}</div>
+      <div class="metric-sub">${m.sub}</div>
+    </div>
+  `).join('');
+
+  // Recent activity
+  const allActivity = [
+    ...db.incomes.map(x=>({...x,type:'income'})),
+    ...db.expenses.map(x=>({...x,type:'expense'})),
+    ...db.sales.map(x=>({...x,type:'sale'})),
+  ].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,10);
+
+  const tbody = document.getElementById('recent-activity-body');
+  if(allActivity.length===0) {
+    tbody.innerHTML = '<tr><td colspan="5"><div class="empty-state"><div class="empty-title">Нет операций</div><div class="empty-sub">Добавьте доходы, расходы или продажи</div></div></td></tr>';
+  } else {
+    tbody.innerHTML = allActivity.map(a=>{
+      let typeLabel='', badge='', desc='', amount='';
+      if(a.type==='income') {
+        typeLabel='Доход'; badge='badge-green';
+        desc=a.source; amount=`<span class="text-green">+${fmt(a.amount)}</span>`;
+      } else if(a.type==='expense') {
+        typeLabel='Расход'; badge='badge-red';
+        desc=a.category; amount=`<span class="text-red">−${fmt(a.amount)}</span>`;
+      } else {
+        typeLabel='Продажа'; badge='badge-blue';
+        desc=`${a.name} × ${a.qty}`; amount=`<span class="text-green">+${fmt(calcSaleMetrics(a).rev)}</span>`;
+      }
+      return `<tr><td><span class="badge ${badge}">${typeLabel}</span></td><td class="td-label">${desc}</td><td>${amount}</td><td class="td-muted">${fmtDate(a.date)}</td><td><span class="badge badge-gray">Завершено</span></td></tr>`;
+    }).join('');
+  }
+
+  renderDashCharts();
+}
+
+function renderDashCharts() {
+  // Build last 7 days labels
+  const labels7 = [], incData=[], expData=[], profData=[], salesCntData=[];
+  for(let i=6;i>=0;i--) {
+    const d = new Date(); d.setDate(d.getDate()-i);
+    const ds = d.toISOString().split('T')[0];
+    const dayLabel = d.toLocaleDateString('ru-RU',{weekday:'short'});
+    labels7.push(dayLabel);
+    const dayInc = db.incomes.filter(x=>x.date===ds).reduce((a,x)=>a+x.amount,0);
+    const daySales = db.sales.filter(x=>x.date===ds).reduce((a,s)=>a+calcSaleMetrics(s).rev,0);
+    const dayExp = db.expenses.filter(x=>x.date===ds).reduce((a,x)=>a+x.amount,0);
+    incData.push(Math.round(dayInc + daySales));
+    expData.push(Math.round(dayExp));
+    profData.push(Math.round(dayInc + daySales - dayExp));
+    salesCntData.push(db.sales.filter(x=>x.date===ds).reduce((a,s)=>a+s.qty,0));
+  }
+
+  const dark = isDark();
+  const gridColor = dark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)';
+  const textColor = dark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)';
+  const baseOpts = {
+    responsive:true, maintainAspectRatio:false,
+    plugins:{legend:{display:false}},
+    scales:{
+      x:{grid:{color:gridColor},ticks:{color:textColor,font:{size:11}}},
+      y:{grid:{color:gridColor},ticks:{color:textColor,font:{size:11},callback:v=>v>=1000?(v/1000)+'к':v}}
+    }
+  };
+
+  function makeChart(id, type, data, opts) {
+    const canvas = document.getElementById(id);
+    if(!canvas) return;
+    if(charts[id]) { charts[id].destroy(); }
+    charts[id] = new Chart(canvas, {type, data, options: Object.assign({}, baseOpts, opts)});
+  }
+
+  makeChart('revenueChart','bar',{
+    labels:labels7,
+    datasets:[
+      {label:'Доход',data:incData,backgroundColor:'rgba(16,185,129,0.7)',borderRadius:4},
+      {label:'Расход',data:expData,backgroundColor:'rgba(239,68,68,0.6)',borderRadius:4}
+    ]
+  },{});
+
+  makeChart('profitChart','line',{
+    labels:labels7,
+    datasets:[{
+      label:'Прибыль',data:profData,
+      borderColor:'#8b5cf6',backgroundColor:'rgba(139,92,246,0.1)',
+      tension:0.4,fill:true,pointRadius:3,pointBackgroundColor:'#8b5cf6'
+    }]
+  },{});
+
+  makeChart('salesChart','bar',{
+    labels:labels7,
+    datasets:[{label:'Продаж',data:salesCntData,backgroundColor:'rgba(59,130,246,0.7)',borderRadius:4}]
+  },{scales:{...baseOpts.scales,y:{...baseOpts.scales.y,ticks:{...baseOpts.scales.y.ticks,callback:v=>Math.round(v)}}}});
+
+  // Expense categories pie
+  const catTotals = EXP_CATEGORIES.map(cat=>db.expenses.filter(x=>x.category===cat).reduce((a,x)=>a+x.amount,0));
+  makeChart('expCatChart','doughnut',{
+    labels:EXP_CATEGORIES.map(c=>c.length>12?c.slice(0,12)+'…':c),
+    datasets:[{data:catTotals,backgroundColor:EXP_CAT_COLORS,borderWidth:0,hoverOffset:4}]
+  },{
+    responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{position:'right',labels:{color:textColor,font:{size:11},boxWidth:10,padding:8}}},
+    scales:{}
+  });
+}
+
+// ─── INCOMES ───
+function renderIncomes() {
+  const dr = getDateRange('day'), wr = getDateRange('week'), mr = getDateRange('month');
+  const dayAmt = db.incomes.filter(x=>inRange(x.date,dr.start,dr.end)).reduce((a,x)=>a+x.amount,0);
+  const weekAmt = db.incomes.filter(x=>inRange(x.date,wr.start,wr.end)).reduce((a,x)=>a+x.amount,0);
+  const monthAmt = db.incomes.filter(x=>inRange(x.date,mr.start,mr.end)).reduce((a,x)=>a+x.amount,0);
+  document.getElementById('inc-day').textContent = fmt(dayAmt);
+  document.getElementById('inc-week').textContent = fmt(weekAmt);
+  document.getElementById('inc-month').textContent = fmt(monthAmt);
+  document.getElementById('inc-count').textContent = db.incomes.length;
+
+  const tbody = document.getElementById('incomes-body');
+  const sorted = [...db.incomes].sort((a,b)=>b.date.localeCompare(a.date));
+  if(sorted.length===0) {
+    tbody.innerHTML = '<tr><td colspan="5"><div class="empty-state"><div class="empty-title">Нет доходов</div><div class="empty-sub">Нажмите «Добавить доход» для начала</div></div></td></tr>';
+    return;
+  }
+  tbody.innerHTML = sorted.map(x=>`
+    <tr>
+      <td><span class="badge badge-green">${x.source}</span></td>
+      <td class="td-muted">${x.comment||'—'}</td>
+      <td class="td-muted">${fmtDate(x.date)}</td>
+      <td class="td-label text-green">+${fmt(x.amount)}</td>
+      <td><button class="btn btn-sm btn-danger" onclick="deleteItem('incomes','${x.id}')">Удалить</button></td>
+    </tr>
+  `).join('');
+}
+
+// ─── EXPENSES ───
+function renderExpenses() {
+  const dr = getDateRange('day'), wr = getDateRange('week'), mr = getDateRange('month');
+  const dayAmt = db.expenses.filter(x=>inRange(x.date,dr.start,dr.end)).reduce((a,x)=>a+x.amount,0);
+  const weekAmt = db.expenses.filter(x=>inRange(x.date,wr.start,wr.end)).reduce((a,x)=>a+x.amount,0);
+  const monthAmt = db.expenses.filter(x=>inRange(x.date,mr.start,mr.end)).reduce((a,x)=>a+x.amount,0);
+  document.getElementById('exp-day').textContent = fmt(dayAmt);
+  document.getElementById('exp-week').textContent = fmt(weekAmt);
+  document.getElementById('exp-month').textContent = fmt(monthAmt);
+  document.getElementById('exp-count').textContent = db.expenses.length;
+
+  // Category breakdown
+  const breakdown = document.getElementById('exp-cat-breakdown');
+  breakdown.innerHTML = EXP_CATEGORIES.map((cat,i)=>{
+    const amt = db.expenses.filter(x=>x.category===cat).reduce((a,x)=>a+x.amount,0);
+    return amt>0?`<div class="metric-card" style="border-left:3px solid ${EXP_CAT_COLORS[i]}">
+      <div class="metric-label" style="color:${EXP_CAT_COLORS[i]}">${cat}</div>
+      <div class="metric-value" style="font-size:16px">${fmt(amt)}</div>
+    </div>`:''
+  }).join('');
+
+  const tbody = document.getElementById('expenses-body');
+  const sorted = [...db.expenses].sort((a,b)=>b.date.localeCompare(a.date));
+  if(sorted.length===0) {
+    tbody.innerHTML = '<tr><td colspan="5"><div class="empty-state"><div class="empty-title">Нет расходов</div></div></td></tr>';
+    return;
+  }
+  tbody.innerHTML = sorted.map((x,i)=>`
+    <tr>
+      <td><span class="badge" style="background:${EXP_CAT_COLORS[EXP_CATEGORIES.indexOf(x.category)]}20;color:${EXP_CAT_COLORS[EXP_CATEGORIES.indexOf(x.category)]}">${x.category}</span></td>
+      <td class="td-muted">${x.comment||'—'}</td>
+      <td class="td-muted">${fmtDate(x.date)}</td>
+      <td class="td-label text-red">−${fmt(x.amount)}</td>
+      <td><button class="btn btn-sm btn-danger" onclick="deleteItem('expenses','${x.id}')">Удалить</button></td>
+    </tr>
+  `).join('');
+}
+
+// ─── ACCOUNTS ───
+function filterAccOps(f) {
+  accFilter = f;
+  document.querySelectorAll('#acc-filter .period-tab').forEach(b=>b.classList.remove('active'));
+  event.target.classList.add('active');
+  renderAccountsOps();
+}
+
+function renderAccounts() {
+  const grid = document.getElementById('accounts-grid');
+  const accounts = [
+    {id:'kaspi',name:'Kaspi',icon:'💳',balance:db.accounts.kaspi,color:'var(--accent)'},
+    {id:'cash',name:'Наличные',icon:'💵',balance:db.accounts.cash,color:'var(--green)'},
+  ];
+  grid.innerHTML = accounts.map(a=>`
+    <div class="account-card">
+      <div class="account-icon" style="background:rgba(139,92,246,0.1)">${a.icon}</div>
+      <div class="account-name">${a.name}</div>
+      <div class="account-balance" style="color:${a.color}">${fmt(a.balance)}</div>
+      <div class="account-sub">Текущий баланс</div>
+    </div>
+  `).join('');
+  renderAccountsOps();
+}
+
+function renderAccountsOps() {
+  let ops = [...db.accOps].sort((a,b)=>b.date.localeCompare(a.date));
+  if(accFilter!=='all') ops = ops.filter(o=>o.account===accFilter||o.from===accFilter||o.to===accFilter);
+
+  const tbody = document.getElementById('acc-ops-body');
+  if(ops.length===0) {
+    tbody.innerHTML = '<tr><td colspan="5"><div class="empty-state"><div class="empty-title">Нет операций</div><div class="empty-sub">Операции появятся при добавлении доходов, расходов и переводов</div></div></td></tr>';
+    return;
+  }
+  tbody.innerHTML = ops.map(o=>{
+    let typeEl='', accountEl='', descEl='', amtEl='';
+    if(o.type==='income') {
+      typeEl='<span class="badge badge-green">Приход</span>';
+      accountEl=o.account==='kaspi'?'💳 Kaspi':'💵 Наличные';
+      descEl=o.source||'Доход';
+      amtEl=`<span class="text-green">+${fmt(o.amount)}</span>`;
+    } else if(o.type==='expense') {
+      typeEl='<span class="badge badge-red">Расход</span>';
+      accountEl=o.account==='kaspi'?'💳 Kaspi':'💵 Наличные';
+      descEl=o.category||'Расход';
+      amtEl=`<span class="text-red">−${fmt(o.amount)}</span>`;
+    } else if(o.type==='transfer') {
+      typeEl='<span class="badge badge-blue">Перевод</span>';
+      accountEl=(o.from==='kaspi'?'💳':o.from==='cash'?'💵':'')+'→'+(o.to==='kaspi'?'💳':'💵');
+      descEl=o.comment||'Перевод';
+      amtEl=`<span class="text-amber">${fmt(o.amount)}</span>`;
+    } else if(o.type==='sale') {
+      typeEl='<span class="badge badge-purple">Продажа</span>';
+      accountEl=o.account==='kaspi'?'💳 Kaspi':'💵 Наличные';
+      descEl=o.name||'Продажа';
+      amtEl=`<span class="text-green">+${fmt(o.amount)}</span>`;
+    }
+    return `<tr><td>${typeEl}</td><td>${accountEl}</td><td class="td-label">${descEl}</td><td class="td-muted">${fmtDate(o.date)}</td><td>${amtEl}</td></tr>`;
+  }).join('');
+}
+
+// ─── SALES ───
+function renderSales() {
+  const mr = getDateRange('month');
+  const mSales = db.sales.filter(x=>inRange(x.date,mr.start,mr.end));
+  const mRev = mSales.reduce((a,s)=>a+calcSaleMetrics(s).rev,0);
+  const mProfit = mSales.reduce((a,s)=>a+calcSaleMetrics(s).profit,0);
+  const mCount = mSales.reduce((a,s)=>a+s.qty,0);
+  const avgMargin = mSales.length > 0
+    ? mSales.reduce((a,s)=>a+calcSaleMetrics(s).margin,0)/mSales.length : 0;
+
+  document.getElementById('sales-revenue').textContent = fmt(mRev);
+  document.getElementById('sales-profit').textContent = fmt(mProfit);
+  document.getElementById('sales-margin').textContent = fmtPct(avgMargin);
+  document.getElementById('sales-count').textContent = fmtNum(mCount);
+
+  const tbody = document.getElementById('sales-body');
+  const sorted = [...db.sales].sort((a,b)=>b.date.localeCompare(a.date));
+  if(sorted.length===0) {
+    tbody.innerHTML = '<tr><td colspan="9"><div class="empty-state"><div class="empty-title">Нет продаж</div><div class="empty-sub">Нажмите «Новая продажа» для начала</div></div></td></tr>';
+    return;
+  }
+  tbody.innerHTML = sorted.map(s=>{
+    const {rev,profit,margin} = calcSaleMetrics(s);
+    return `<tr>
+      <td class="td-label">${s.name}</td>
+      <td>${s.qty}</td>
+      <td>${fmt(s.price)}</td>
+      <td class="td-muted">${fmt(s.cost)}</td>
+      <td class="text-green font-medium">${fmt(rev)}</td>
+      <td class="${profit>=0?'text-green':'text-red'} font-medium">${fmt(profit)}</td>
+      <td><span class="badge ${margin>=40?'badge-green':margin>=20?'badge-amber':'badge-red'}">${fmtPct(margin)}</span></td>
+      <td class="td-muted">${fmtDate(s.date)}</td>
+      <td><button class="btn btn-sm btn-danger" onclick="deleteItem('sales','${s.id}')">Удалить</button></td>
+    </tr>`;
+  }).join('');
+}
+
+// ─── INVENTORY ───
+function renderInventory() {
+  const total = db.products.reduce((a,p)=>a+p.qty,0);
+  const value = db.products.reduce((a,p)=>a+(p.qty*p.cost),0);
+  const low = db.products.filter(p=>p.qty>0&&p.qty<=3).length;
+  const zero = db.products.filter(p=>p.qty===0).length;
+
+  document.getElementById('inv-total').textContent = fmtNum(total);
+  document.getElementById('inv-value').textContent = fmt(value);
+  document.getElementById('inv-low').textContent = low;
+  document.getElementById('inv-zero').textContent = zero;
+
+  const grid = document.getElementById('product-grid');
+  if(db.products.length===0) {
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><div class="empty-title">Нет товаров</div><div class="empty-sub">Добавьте товары на склад</div></div>`;
+    return;
+  }
+  grid.innerHTML = db.products.map(p=>`
+    <div class="product-card">
+      <div class="product-name">${p.name}</div>
+      <div class="product-meta">${p.size} · ${p.color}</div>
+      <div class="product-qty ${p.qty===0?'text-red':p.qty<=3?'low':'ok'}">${p.qty}</div>
+      <div class="text-muted" style="font-size:11px;margin-bottom:10px">единиц в наличии</div>
+      <div class="product-prices">
+        <span>Себест.: ${fmt(p.cost)}</span>
+        <span>Цена: ${fmt(p.price)}</span>
+      </div>
+      <div style="margin-top:10px;display:flex;gap:6px">
+        <button class="btn btn-sm" style="flex:1;font-size:11px" onclick="quickStockAdd('${p.id}')">+1</button>
+        <button class="btn btn-sm btn-danger" style="font-size:11px" onclick="deleteItem('products','${p.id}')">✕</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function quickStockAdd(id) {
+  const p = db.products.find(x=>x.id===id);
+  if(p) { p.qty++; saveDB(); renderInventory(); showToast(`+1 к ${p.name}`, 'success'); }
+}
+
+// ─── REPORTS ───
+function setReportPeriod(p) {
+  reportPeriod = p;
+  document.querySelectorAll('#report-period-tabs .period-tab').forEach(b=>b.classList.remove('active'));
+  event.target.classList.add('active');
+  renderReports();
+}
+
+function renderReports() {
+  const { start, end } = getDateRange(reportPeriod);
+  const incomes = db.incomes.filter(x=>inRange(x.date,start,end));
+  const expenses = db.expenses.filter(x=>inRange(x.date,start,end));
+  const sales = db.sales.filter(x=>inRange(x.date,start,end));
+  const totalInc = incomes.reduce((a,x)=>a+x.amount,0);
+  const totalExp = expenses.reduce((a,x)=>a+x.amount,0);
+  const totalRev = sales.reduce((a,s)=>a+calcSaleMetrics(s).rev,0);
+  const totalProfit = sales.reduce((a,s)=>a+calcSaleMetrics(s).profit,0) + totalInc - totalExp;
+  const salesQty = sales.reduce((a,s)=>a+s.qty,0);
+  const avgMargin = sales.length>0 ? sales.reduce((a,s)=>a+calcSaleMetrics(s).margin,0)/sales.length : 0;
+
+  const rStats = document.getElementById('report-stats');
+  rStats.innerHTML = [
+    {label:'Общий доход', val:fmt(totalInc+totalRev), color:'var(--green)'},
+    {label:'Расходы', val:fmt(totalExp), color:'var(--red)'},
+    {label:'Чистая прибыль', val:fmt(totalProfit), color:totalProfit>=0?'var(--green)':'var(--red)'},
+    {label:'Выручка продаж', val:fmt(totalRev), color:'var(--blue)'},
+    {label:'Продано товаров', val:fmtNum(salesQty), color:'var(--amber)'},
+    {label:'Средняя маржа', val:fmtPct(avgMargin), color:'var(--accent)'},
+  ].map(s=>`
+    <div class="report-stat">
+      <div class="report-stat-val" style="color:${s.color}">${s.val}</div>
+      <div class="report-stat-label">${s.label}</div>
+    </div>
+  `).join('');
+
+  // Build chart data
+  const days = reportPeriod==='day'?1:reportPeriod==='week'?7:30;
+  const labels=[], incArr=[], expArr=[], profArr=[], salesArr=[];
+  for(let i=days-1;i>=0;i--) {
+    const d = new Date(); d.setDate(d.getDate()-i);
+    const ds = d.toISOString().split('T')[0];
+    labels.push(days<=7?d.toLocaleDateString('ru-RU',{weekday:'short'}):d.getDate().toString());
+    const dayInc = db.incomes.filter(x=>x.date===ds).reduce((a,x)=>a+x.amount,0)
+      + db.sales.filter(x=>x.date===ds).reduce((a,s)=>a+calcSaleMetrics(s).rev,0);
+    const dayExp = db.expenses.filter(x=>x.date===ds).reduce((a,x)=>a+x.amount,0);
+    incArr.push(Math.round(dayInc));
+    expArr.push(Math.round(dayExp));
+    profArr.push(Math.round(dayInc-dayExp));
+    salesArr.push(db.sales.filter(x=>x.date===ds).reduce((a,s)=>a+s.qty,0));
+  }
+
+  const dark = isDark();
+  const gridColor = dark?'rgba(255,255,255,0.05)':'rgba(0,0,0,0.05)';
+  const textColor = dark?'rgba(255,255,255,0.4)':'rgba(0,0,0,0.4)';
+  const bOpts = {responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{color:gridColor},ticks:{color:textColor,font:{size:11},autoSkip:true,maxTicksLimit:10}},y:{grid:{color:gridColor},ticks:{color:textColor,font:{size:11}}}}};
+
+  function mkChart(id,type,data,opts) {
+    const c = document.getElementById(id); if(!c) return;
+    if(charts[id]) charts[id].destroy();
+    charts[id] = new Chart(c,{type,data,options:Object.assign({},bOpts,opts)});
+  }
+
+  mkChart('reportMainChart','bar',{
+    labels,
+    datasets:[
+      {label:'Доход',data:incArr,backgroundColor:'rgba(16,185,129,0.7)',borderRadius:3},
+      {label:'Расход',data:expArr,backgroundColor:'rgba(239,68,68,0.6)',borderRadius:3},
+      {label:'Прибыль',data:profArr,type:'line',borderColor:'#8b5cf6',backgroundColor:'rgba(139,92,246,0.08)',tension:0.4,fill:true,pointRadius:2}
+    ]
+  },{plugins:{legend:{display:true,labels:{color:textColor,font:{size:11},boxWidth:10}}}});
+
+  mkChart('reportSalesChart','bar',{
+    labels,datasets:[{label:'Продаж',data:salesArr,backgroundColor:'rgba(59,130,246,0.7)',borderRadius:3}]
+  },{});
+
+  const catTotals = EXP_CATEGORIES.map(cat=>expenses.filter(x=>x.category===cat).reduce((a,x)=>a+x.amount,0));
+  mkChart('reportExpChart','doughnut',{
+    labels:EXP_CATEGORIES.map(c=>c.length>10?c.slice(0,10)+'…':c),
+    datasets:[{data:catTotals,backgroundColor:EXP_CAT_COLORS,borderWidth:0}]
+  },{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{color:textColor,font:{size:10},boxWidth:8,padding:6}}},scales:{}});
+
+  // Top products
+  const productSales = {};
+  sales.forEach(s=>{
+    if(!productSales[s.name]) productSales[s.name]={name:s.name,qty:0,rev:0,profit:0,margins:[]};
+    const m = calcSaleMetrics(s);
+    productSales[s.name].qty += s.qty;
+    productSales[s.name].rev += m.rev;
+    productSales[s.name].profit += m.profit;
+    productSales[s.name].margins.push(m.margin);
+  });
+  const topArr = Object.values(productSales).sort((a,b)=>b.rev-a.rev).slice(0,10);
+  const topBody = document.getElementById('report-top-body');
+  if(topArr.length===0) {
+    topBody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--text-muted)">Нет данных за период</td></tr>';
+  } else {
+    topBody.innerHTML = topArr.map(p=>{
+      const avgM = p.margins.reduce((a,v)=>a+v,0)/p.margins.length;
+      return `<tr><td class="td-label">${p.name}</td><td>${fmtNum(p.qty)}</td><td class="text-green">${fmt(p.rev)}</td><td class="${p.profit>=0?'text-green':'text-red'}">${fmt(p.profit)}</td><td><span class="badge ${avgM>=40?'badge-green':avgM>=20?'badge-amber':'badge-red'}">${fmtPct(avgM)}</span></td></tr>`;
+    }).join('');
+  }
+}
+
+function exportReport() {
+  const { start, end } = getDateRange(reportPeriod);
+  const rows = [['Тип','Дата','Сумма','Описание']];
+  db.incomes.filter(x=>inRange(x.date,start,end)).forEach(x=>rows.push(['Доход',x.date,x.amount,x.source]));
+  db.expenses.filter(x=>inRange(x.date,start,end)).forEach(x=>rows.push(['Расход',x.date,-x.amount,x.category]));
+  db.sales.filter(x=>inRange(x.date,start,end)).forEach(s=>{
+    const m=calcSaleMetrics(s);
+    rows.push(['Продажа',s.date,m.rev,s.name+' x'+s.qty]);
+    rows.push(['Себестоимость',s.date,-m.rev+m.profit,s.name]);
+  });
+  const csv = rows.map(r=>r.join(',')).join('\n');
+  const blob = new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href=url; a.download=`отчёт_${reportPeriod}_${today()}.csv`; a.click();
+  URL.revokeObjectURL(url);
+  showToast('CSV экспортирован', 'success');
+}
+
+// ─── MODALS ───
+let currentModal = null;
+function openModal(type) {
+  document.getElementById('modal-overlay').classList.remove('hidden');
+  document.querySelectorAll('.modal').forEach(m=>m.classList.add('hidden'));
+  const m = document.getElementById('modal-'+type);
+  if(!m) return;
+  m.classList.remove('hidden');
+  currentModal = type;
+  // Set defaults
+  const t = today();
+  if(type==='income') { document.getElementById('inc-date').value=t; }
+  if(type==='expense') { document.getElementById('exp-date').value=t; }
+  if(type==='transfer') { document.getElementById('tr-date').value=t; }
+  if(type==='sale') {
+    document.getElementById('sale-date').value=t;
+    // Populate product dropdown
+    const sel = document.getElementById('sale-product-select');
+    sel.innerHTML = '<option value="">— Выбрать с склада —</option>';
+    db.products.filter(p=>p.qty>0).forEach(p=>{
+      sel.innerHTML += `<option value="${p.id}">${p.name} ${p.size} ${p.color} (${p.qty} шт.)</option>`;
+    });
+    // Live preview
+    ['sale-qty','sale-price','sale-cost'].forEach(id=>{
+      document.getElementById(id).addEventListener('input', updateSalePreview);
+    });
+  }
+  if(type==='stockin') {
+    document.getElementById('si-date').value=t;
+    const sel = document.getElementById('si-product');
+    sel.innerHTML = db.products.map(p=>`<option value="${p.id}">${p.name} ${p.size} ${p.color}</option>`).join('');
+  }
+}
+
+function closeModal(e) {
+  if(e && e.target!==document.getElementById('modal-overlay')) return;
+  document.getElementById('modal-overlay').classList.add('hidden');
+  document.querySelectorAll('.modal').forEach(m=>m.classList.add('hidden'));
+  currentModal = null;
+  document.getElementById('sale-preview').style.display='none';
+}
+
+function fillSaleFromProduct() {
+  const sel = document.getElementById('sale-product-select');
+  const id = sel.value;
+  if(!id) return;
+  const p = db.products.find(x=>x.id===id);
+  if(p) {
+    document.getElementById('sale-name').value = `${p.name} ${p.size} ${p.color}`;
+    document.getElementById('sale-price').value = p.price;
+    document.getElementById('sale-cost').value = p.cost;
+    updateSalePreview();
+  }
+}
+
+function updateSalePreview() {
+  const qty = parseFloat(document.getElementById('sale-qty').value)||0;
+  const price = parseFloat(document.getElementById('sale-price').value)||0;
+  const cost = parseFloat(document.getElementById('sale-cost').value)||0;
+  if(price<=0) { document.getElementById('sale-preview').style.display='none'; return; }
+  const rev = qty*price;
+  const profit = qty*(price-cost);
+  const margin = price>0?((price-cost)/price*100):0;
+  document.getElementById('sp-rev').textContent = fmt(rev);
+  document.getElementById('sp-prof').textContent = fmt(profit);
+  document.getElementById('sp-prof').style.color = profit>=0?'var(--green)':'var(--red)';
+  document.getElementById('sp-margin').textContent = fmtPct(margin);
+  document.getElementById('sp-margin').style.color = margin>=40?'var(--green)':margin>=20?'var(--amber)':'var(--red)';
+  document.getElementById('sale-preview').style.display='block';
+}
+
+// ─── SAVE ACTIONS ───
+function saveIncome() {
+  const amount = parseFloat(document.getElementById('inc-amount').value);
+  if(!amount||amount<=0) { showToast('Введите сумму', 'error'); return; }
+  const date = document.getElementById('inc-date').value || today();
+  const source = document.getElementById('inc-source').value;
+  const account = document.getElementById('inc-account').value;
+  const comment = document.getElementById('inc-comment').value.trim();
+  const item = {id:uid(),amount,date,source,account,comment,createdAt:new Date().toISOString(),userId:currentUser?.id};
+  db.incomes.push(item);
+  db.accounts[account] = (db.accounts[account]||0) + amount;
+  db.accOps.push({id:uid(),type:'income',amount,date,source,account,comment});
+  saveDB();
+  closeModal();
+  renderIncomes();
+  if(currentSection==='dashboard') renderDashboard();
+  if(currentSection==='accounts') renderAccounts();
+  showToast(`Доход ${fmt(amount)} добавлен`, 'success');
+  document.getElementById('inc-amount').value='';
+  document.getElementById('inc-comment').value='';
+}
+
+function saveExpense() {
+  const amount = parseFloat(document.getElementById('exp-amount').value);
+  if(!amount||amount<=0) { showToast('Введите сумму', 'error'); return; }
+  const date = document.getElementById('exp-date').value || today();
+  const category = document.getElementById('exp-category').value;
+  const account = document.getElementById('exp-account').value;
+  const comment = document.getElementById('exp-comment').value.trim();
+  const item = {id:uid(),amount,date,category,account,comment,createdAt:new Date().toISOString(),userId:currentUser?.id};
+  db.expenses.push(item);
+  db.accounts[account] = Math.max(0, (db.accounts[account]||0) - amount);
+  db.accOps.push({id:uid(),type:'expense',amount,date,category,account,comment});
+  saveDB();
+  closeModal();
+  renderExpenses();
+  if(currentSection==='dashboard') renderDashboard();
+  if(currentSection==='accounts') renderAccounts();
+  showToast(`Расход ${fmt(amount)} добавлен`, 'success');
+  document.getElementById('exp-amount').value='';
+  document.getElementById('exp-comment').value='';
+}
+
+function saveTransfer() {
+  const from = document.getElementById('tr-from').value;
+  const to = document.getElementById('tr-to').value;
+  const amount = parseFloat(document.getElementById('tr-amount').value);
+  const date = document.getElementById('tr-date').value || today();
+  const comment = document.getElementById('tr-comment').value.trim();
+  if(from===to) { showToast('Выберите разные счета', 'error'); return; }
+  if(!amount||amount<=0) { showToast('Введите сумму', 'error'); return; }
+  if((db.accounts[from]||0) < amount) { showToast('Недостаточно средств', 'error'); return; }
+  db.accounts[from] = (db.accounts[from]||0) - amount;
+  db.accounts[to] = (db.accounts[to]||0) + amount;
+  db.accOps.push({id:uid(),type:'transfer',amount,date,from,to,comment});
+  saveDB();
+  closeModal();
+  renderAccounts();
+  if(currentSection==='dashboard') renderDashboard();
+  showToast(`Переведено ${fmt(amount)}`, 'success');
+}
+
+function saveSale() {
+  const name = document.getElementById('sale-name').value.trim();
+  const qty = parseInt(document.getElementById('sale-qty').value)||0;
+  const price = parseFloat(document.getElementById('sale-price').value)||0;
+  const cost = parseFloat(document.getElementById('sale-cost').value)||0;
+  const date = document.getElementById('sale-date').value || today();
+  const account = document.getElementById('sale-account').value;
+  if(!name) { showToast('Введите название', 'error'); return; }
+  if(qty<=0||price<=0) { showToast('Введите количество и цену', 'error'); return; }
+
+  // Deduct from inventory if product selected
+  const prodSel = document.getElementById('sale-product-select').value;
+  if(prodSel) {
+    const p = db.products.find(x=>x.id===prodSel);
+    if(p) {
+      if(p.qty < qty) { showToast(`На складе только ${p.qty} шт.`, 'error'); return; }
+      p.qty -= qty;
+    }
+  }
+
+  const item = {id:uid(),name,qty,price,cost,date,account,createdAt:new Date().toISOString(),userId:currentUser?.id};
+  db.sales.push(item);
+  const rev = calcSaleMetrics(item).rev;
+  db.accounts[account] = (db.accounts[account]||0) + rev;
+  db.accOps.push({id:uid(),type:'sale',amount:rev,date,name:`${name} × ${qty}`,account});
+  saveDB();
+  closeModal();
+  renderSales();
+  if(currentSection==='dashboard') renderDashboard();
+  if(currentSection==='accounts') renderAccounts();
+  if(currentSection==='inventory') renderInventory();
+  showToast(`Продажа на ${fmt(rev)} записана`, 'success');
+}
+
+function saveProduct() {
+  const name = document.getElementById('prod-name').value.trim();
+  if(!name) { showToast('Введите название', 'error'); return; }
+  const item = {
+    id:uid(), name,
+    size:document.getElementById('prod-size').value,
+    color:document.getElementById('prod-color').value.trim()||'—',
+    qty:parseInt(document.getElementById('prod-qty').value)||0,
+    cost:parseFloat(document.getElementById('prod-cost').value)||0,
+    price:parseFloat(document.getElementById('prod-price').value)||0,
+    createdAt:new Date().toISOString()
+  };
+  db.products.push(item);
+  saveDB();
+  closeModal();
+  renderInventory();
+  showToast(`Товар «${name}» добавлен`, 'success');
+}
+
+function saveStockIn() {
+  const prodId = document.getElementById('si-product').value;
+  const qty = parseInt(document.getElementById('si-qty').value)||0;
+  if(!prodId||qty<=0) { showToast('Укажите товар и количество', 'error'); return; }
+  const p = db.products.find(x=>x.id===prodId);
+  if(!p) return;
+  p.qty += qty;
+  saveDB();
+  closeModal();
+  renderInventory();
+  showToast(`+${qty} к ${p.name}`, 'success');
+}
+
+// ─── DELETE ───
+function deleteItem(collection, id) {
+  if(!confirm('Удалить запись?')) return;
+  const before = db[collection].find(x=>x.id===id);
+  if(!before) return;
+
+  // Reverse account effects
+  if(collection==='incomes' && before.account) {
+    db.accounts[before.account] = Math.max(0, (db.accounts[before.account]||0) - before.amount);
+  }
+  if(collection==='expenses' && before.account) {
+    db.accounts[before.account] = (db.accounts[before.account]||0) + before.amount;
+  }
+  if(collection==='sales' && before.account) {
+    const rev = calcSaleMetrics(before).rev;
+    db.accounts[before.account] = Math.max(0, (db.accounts[before.account]||0) - rev);
+  }
+
+  db[collection] = db[collection].filter(x=>x.id!==id);
+  saveDB();
+  renderSection(currentSection);
+  showToast('Удалено', 'info');
+}
+
+// ─── SETTINGS & RESET ───
+function savePin() {
+  const oldPin = document.getElementById('pin-old').value;
+  const newPin = document.getElementById('pin-new').value;
+  const newPin2 = document.getElementById('pin-new2').value;
+  if(oldPin !== getPin()) { showToast('Неверный текущий PIN', 'error'); return; }
+  if(newPin.length < 4) { showToast('PIN должен быть минимум 4 символа', 'error'); return; }
+  if(newPin !== newPin2) { showToast('PIN-коды не совпадают', 'error'); return; }
+  localStorage.setItem('crm_pin', newPin);
+  closeModal();
+  showToast('PIN успешно изменён', 'success');
+  document.getElementById('pin-old').value='';
+  document.getElementById('pin-new').value='';
+  document.getElementById('pin-new2').value='';
+}
+
+function confirmReset() {
+  openModal('reset');
+}
+
+function doReset() {
+  const pin = document.getElementById('reset-pin').value;
+  const cb = document.getElementById('reset-confirm-cb').checked;
+  if(pin !== getPin()) { showToast('Неверный PIN', 'error'); return; }
+  if(!cb) { showToast('Подтвердите удаление', 'error'); return; }
+  // Clear all data
+  db = {incomes:[],expenses:[],sales:[],products:[],accounts:{kaspi:0,cash:0},accOps:[],lastUpdated:Date.now()};
+  localStorage.removeItem('crm_cache_v4');
+  saveDB();
+  closeModal();
+  renderSection(currentSection);
+  showToast('Все данные удалены', 'info');
+}
+
+// ─── TOAST ───
+function showToast(msg, type='info') {
+  const container = document.getElementById('toast-container');
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  const icons = {success:'✓', error:'✕', info:'ℹ'};
+  toast.innerHTML = `<span>${icons[type]||'•'}</span><span>${msg}</span>`;
+  container.appendChild(toast);
+  setTimeout(()=>{ toast.style.opacity='0'; toast.style.transition='opacity .3s'; setTimeout(()=>toast.remove(),300); }, 2500);
+}
+
+// ─── INIT ───
+async function init() {
+  // Load cached data immediately so UI is instant
+  try {
+    const cached = localStorage.getItem('crm_cache_v4');
+    if (cached) db = Object.assign(db, JSON.parse(cached));
+  } catch(e) {}
+  initAuth();
+  await initSupabase();
+  // After Supabase loads, re-render with fresh data
+  if (currentUser) renderSection(currentSection);
+}
+
+// Periodic re-sync every 30s as fallback
+setInterval(async () => {
+  if (currentUser && supabase) {
+    await loadDB();
+    renderSection(currentSection);
+  }
+}, 30000);
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
